@@ -1,3 +1,4 @@
+// este archivo sirve para hacer pruebas autimatizadas sin necesidad de hacerlas a mano
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';

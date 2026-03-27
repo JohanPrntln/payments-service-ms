@@ -1,3 +1,4 @@
+// aca se van a controlar las peticiones get, post, etc y tambien va a recibir la peticion de pago
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 

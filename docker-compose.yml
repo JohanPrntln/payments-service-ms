@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  payments-service:
+    container_name: payments-ms-container
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules

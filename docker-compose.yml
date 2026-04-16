@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  # 1. SERVICIO DE LA BASE DE DATOS
+  postgres-db:
+    image: postgres:15-alpine # Descarga una versión ligera de PostgreSQL
+    container_name: payments-db-container
+    environment:
+      POSTGRES_USER: admin     # Usuario de la base de datos
+      POSTGRES_PASSWORD: root  # Contraseña
+      POSTGRES_DB: payments_db # Nombre de la base de datos
+    ports:
+      - "5432:5432"            # Puerto estándar de Postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data # Guarda los datos para que no se borren al apagar Docker
+
+  # 2. NUESTRO MICROSERVICIO DE PAGOS
   payments-service:
     container_name: payments-ms-container
     build:
@@ -11,3 +25,11 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
+    env_file:
+      - .env
+    depends_on:
+      - postgres-db # Obliga a Docker a prender primero la base de datos antes que nuestro código
+
+# Definimos el volumen externo para guardar los datos
+volumes:
+  pgdata:

@@ -1,7 +1,7 @@
 import { IsNumber, IsString, IsNotEmpty, Min, IsEmail } from 'class-validator';
 
 export class CreatePaymentDto {
-  // El monto de la cita médica debe ser un número y no puede estar vacío
+  // El monto de la cita  debe ser un número y no puede estar vacío
   @IsNumber()
   @IsNotEmpty()
   @Min(1000) // Wompi y pasarelas en COP no suelen aceptar transacciones menores a ciertos montos

@@ -21,7 +21,7 @@ export class PaymentsService {
   // con Wompi toma un par de segundos y el código debe esperar la respuesta.
   async processPayment(createPaymentDto: CreatePaymentDto) {
     
-    // 1. Extraemos tu llave secreta del archivo .env. ¡Nunca la escribas directo aquí!
+    // 1. Extraemos la llave secreta del archivo .env.
     const privateKey = this.configService.get<string>('WOMPI_PRIVATE_KEY');
     
     // 2. Esta es la URL oficial de Wompi para hacer transacciones de prueba (Sandbox)

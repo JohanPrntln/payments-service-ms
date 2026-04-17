@@ -1,79 +1,102 @@
 import { Injectable, InternalServerErrorException, Logger, HttpException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
+import { InjectRepository } from '@nestjs/typeorm'; 
+import { Repository } from 'typeorm';               
 import { CreatePaymentDto } from './dto/create-payment.dto';
-import { firstValueFrom } from 'rxjs'; // Convierte el flujo de datos de Axios en una Promesa (async/await)
+import { Payment } from './entities/payment.entity'; 
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class PaymentsService {
-  // Logger nos permite imprimir mensajes en la consola de Docker para saber qué está pasando
   private readonly logger = new Logger(PaymentsService.name);
 
-  // El constructor es donde pedimos las herramientas que vamos a usar.
-  // configService: Para leer el archivo .env oculto.
-  // httpService: Para mandar la petición a internet.
   constructor(
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
+    
+    // Inyectamos el repositorio. Esto le da al servicio el poder de hacer INSERT, SELECT, UPDATE en la BD.
+    @InjectRepository(Payment)
+    private readonly paymentRepository: Repository<Payment>,
   ) {}
 
-  // Esta es la función principal que procesa el pago. Es "async" porque la comunicación
-  // con Wompi toma un par de segundos y el código debe esperar la respuesta.
   async processPayment(createPaymentDto: CreatePaymentDto) {
     
-    // 1. Extraemos la llave secreta del archivo .env.
+    // 1. GENERAR ID Y REFERENCIA NOSOTROS MISMOS
+    // Usamos el timestamp (milisegundos) para garantizar que nunca se repitan
+    const timestamp = Date.now();
+    const paymentId = `pay_${timestamp}`;        // Cumple el formato del contrato: "pay_..."
+    const referenceCode = `ref_${timestamp}`;    // Referencia interna para Wompi
+
+    // 2. Preparamos los datos para la base de datos
+    const newPayment = this.paymentRepository.create({
+      id: paymentId, 
+      appointmentId: createPaymentDto.appointmentId,
+      userId: createPaymentDto.userId,
+      amount: createPaymentDto.amount,
+      currency: createPaymentDto.currency,
+      method: createPaymentDto.method,
+      reference: referenceCode,
+      status: 'pending', 
+    });
+
+    // Ejecutamos el guardado en la base de datos
+    const savedPayment = await this.paymentRepository.save(newPayment);
+    this.logger.log(`Pago guardado en BD con ID: ${savedPayment.id}. Iniciando Wompi...`);
+
+    // 3. PREPARAR CONEXIÓN A WOMPI
     const privateKey = this.configService.get<string>('WOMPI_PRIVATE_KEY');
-    
-    // 2. Esta es la URL oficial de Wompi para hacer transacciones de prueba (Sandbox)
     const wompiUrl = 'https://sandbox.wompi.co/v1/transactions';
 
-    // 3. Wompi exige que los nombres de las variables tengan guión bajo (snake_case).
-    // Aquí traducimos los datos que llegaron de tu DTO al formato estricto de Wompi.
+    // 4. MAPEO ESTRICTO PARA WOMPI
     const payload = {
-      amount_in_cents: createPaymentDto.amountInCents, // El dinero (ej. 50000)
-      currency: createPaymentDto.currency,             // La moneda (ej. COP)
-      customer_email: createPaymentDto.customerEmail,  // Correo del paciente o cliente
+      amount_in_cents: createPaymentDto.amount, 
+      currency: createPaymentDto.currency,
+      customer_email: createPaymentDto.customerEmail,
       payment_method: {
-        type: 'CARD',                                  // Método de pago: Tarjeta
-        token: createPaymentDto.paymentMethodToken,    // El token de la tarjeta que generó el Frontend
-        installments: 1,                               // Número de cuotas (1 por defecto)
+        type: 'CARD',
+        token: createPaymentDto.paymentMethodToken,
+        installments: 1,
       },
-      reference: createPaymentDto.reference,           // Número de la reserva o cita
+      reference: referenceCode, 
     };
 
     try {
-      this.logger.log(`Iniciando cobro para la reserva: ${createPaymentDto.reference}`);
-
-      // 4. Hacemos el envío de los datos. 
-      // Usamos .post porque estamos "enviando" información.
+      // 5. ENVÍO A WOMPI
       const response = await firstValueFrom(
         this.httpService.post(wompiUrl, payload, {
           headers: {
-            // El encabezado Authorization es nuestra credencial de seguridad. 
-            // Así Wompi sabe que somos nosotros y no un atacante.
-            Authorization: `Bearer ${privateKey}`, 
+            Authorization: `Bearer ${privateKey}`,
           },
         }),
       );
 
-      // 5. Si Wompi acepta la petición, devolvemos los datos importantes al Frontend.
+      // 6. RESPUESTA FINAL SI WOMPI ACEPTA
+      // Actualizamos el estado en base de datos a aprobado
+      savedPayment.status = 'approved';
+      await this.paymentRepository.save(savedPayment);
+
       return {
-        message: 'Transacción creada exitosamente.',
-        transactionId: response.data.data.id,        // El ID único del pago en Wompi
-        status: response.data.data.status,           // El estado actual (generalmente PENDING)
+        id: savedPayment.id,
+        appointmentId: savedPayment.appointmentId,
+        reference: referenceCode,
+        wompiTransactionId: response.data.data.id,
+        status: savedPayment.status
       };
 
     } catch (error) {
-      // 6. Si Wompi nos rechaza (por ejemplo, si usamos el token inventado "tok_test_12345"),
-      // el código entra aquí. Extraemos el error real de Wompi para saber qué falló.
+      // 7. MANEJO DE ERROR (SI EL TOKEN DE WOMPI ES FALSO)
+      // Cambiamos a fallido en BD y guardamos
+      savedPayment.status = 'failed';
+      await this.paymentRepository.save(savedPayment);
+
       const wompiError = error.response?.data || error.message;
       this.logger.error('Wompi rechazó la transacción', wompiError);
       
-      // Lanzamos el error hacia Postman para que tú puedas leerlo en la pantalla
       throw new HttpException(
         {
           message: 'Error al procesar el pago con Wompi',
-          detalle: wompiError, // Ahora verás si fue error de token, llave, o monto
+          detalle: wompiError,
         },
         error.response?.status || 500,
       );

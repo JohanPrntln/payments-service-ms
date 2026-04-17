@@ -1,18 +1,33 @@
 import { IsNumber, IsString, IsNotEmpty, Min, IsEmail } from 'class-validator';
 
 export class CreatePaymentDto {
-  // El monto de la cita  debe ser un número y no puede estar vacío
+  // ID de la cita médica que nos enviará el microservicio de Appointments
+  @IsString()
+  @IsNotEmpty()
+  appointmentId: string;
+
+  // ID del paciente que nos enviará el API Gateway
+  @IsString()
+  @IsNotEmpty()
+  userId: string;
+
+  // El monto a cobrar (se define como 'amount')
   @IsNumber()
   @IsNotEmpty()
-  @Min(1000) // Wompi y pasarelas en COP no suelen aceptar transacciones menores a ciertos montos
-  amountInCents: number;
+  @Min(1000) 
+  amount: number;
 
   // La moneda (ej. "COP")
   @IsString()
   @IsNotEmpty()
   currency: string;
 
-  // El correo del paciente al que se le va a cobrar
+  // El método de pago exigido (ej. "card")
+  @IsString()
+  @IsNotEmpty()
+  method: string;
+
+  // El correo del paciente al que se le va a cobrar en Wompi
   @IsEmail()
   @IsNotEmpty()
   customerEmail: string;
@@ -21,9 +36,4 @@ export class CreatePaymentDto {
   @IsString()
   @IsNotEmpty()
   paymentMethodToken: string;
-
-  // Una referencia única para saber de qué cita médica es este pago
-  @IsString()
-  @IsNotEmpty()
-  reference: string;
 }

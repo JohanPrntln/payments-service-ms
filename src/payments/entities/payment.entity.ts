@@ -1,31 +1,32 @@
-import { Entity, Column, PrimaryColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryColumn, CreateDateColumn } from 'typeorm'; 
 
-@Entity('payments')
+@Entity('payments') 
 export class Payment {
-  @PrimaryColumn()
-  id: string; // ej. pay_001
+  
+  @PrimaryColumn({ type: 'varchar' }) 
+  id: string; 
 
-  @Column()
-  appointmentId: string; // ej. app_001
+  @Column({ type: 'varchar' })
+  appointmentId: string;
 
-  @Column()
-  userId: string; // ej. usr_001
+  @Column({ type: 'varchar' })
+  userId: string;
 
-  @Column('int')
-  amount: number; // ej. 50000
+  @Column({ type: 'int' })
+  amount: number;
 
-  @Column()
-  currency: string; // ej. COP
+  @Column({ type: 'varchar', length: 3 })
+  currency: string; 
 
-  @Column({ default: 'pending' })
-  status: string; // pending, approved, declined, failed
+  @Column({ type: 'varchar', default: 'pending' })
+  status: string; 
 
-  @Column()
-  method: string; // card, nequi, etc.
+  @Column({ type: 'varchar' })
+  method: string; 
 
-  @Column({ nullable: true })
-  reference: string; // WOMPI_REF_001
+  @Column({ type: 'varchar', nullable: true })
+  reference: string; 
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 }

@@ -102,4 +102,22 @@ export class PaymentsService {
       );
     }
   }
+  // Esta función busca un pago por su ID y le cambia el estado
+  async updatePaymentStatus(id: string, newStatus: string) {
+    // 1. Buscamos el pago en la base de datos
+    const payment = await this.paymentRepository.findOne({ where: { id } });
+    
+    if (!payment) {
+      throw new HttpException('Pago no encontrado', 404);
+    }
+
+    // 2. Actualizamos el estado y guardamos
+    payment.status = newStatus;
+    const updatedPayment = await this.paymentRepository.save(payment);
+
+    return {
+      id: updatedPayment.id,
+      status: updatedPayment.status
+    };
+  }
 }

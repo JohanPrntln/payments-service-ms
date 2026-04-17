@@ -36,23 +36,32 @@ export class PaymentsController {
   }
 
   // ------------------------------------------------------------------
-  // 2. ENDPOINT DEL CONTRATO: PATCH /payments/:id/status (Actualizar estado)
+  // 2. ENDPOINT DEL CONTRATO: PATCH /payments/:id/status
   // ------------------------------------------------------------------
   @Patch(':id/status')
   async updatePaymentStatus(
     @Param('id') id: string, 
-    @Body() statusUpdateDto: any // (Luego crearemos un DTO para esto)
+    @Body() body: { status: string } // Recibimos el nuevo estado desde Postman
   ) {
-    // Por ahora devolvemos un éxito simulado para cumplir la estructura.
-    // En el siguiente paso, aquí llamaremos al servicio para buscar en la BD.
-    return {
-      success: true,
-      message: 'Estado del pago actualizado',
-      data: {
-        id: id,
-        status: 'approved'
-      }
-    };
+    try {
+      // Llamamos al servicio real
+      const data = await this.paymentsService.updatePaymentStatus(id, body.status);
+      
+      return {
+        success: true,
+        message: 'Estado del pago actualizado correctamente',
+        data: data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Error al actualizar el estado',
+        error: {
+          code: 'PAYMENT_UPDATE_FAILED',
+          details: [error.message]
+        }
+      };
+    }
   }
 
   // ------------------------------------------------------------------

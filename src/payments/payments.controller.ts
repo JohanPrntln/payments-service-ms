@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Patch, Param, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Patch, Param, HttpCode, HttpStatus, Get } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { WompiWebhookDto } from './dto/webhook.dto';
@@ -73,5 +73,54 @@ export class PaymentsController {
     // Wompi no lee formatos de éxito/error, solo necesita un 200 OK.
     console.log('Actualización de transacción recibida desde Wompi:', webhookDto);
     return { received: true };
+  }
+
+  // ------------------------------------------------------------------
+  // 4. ENDPOINT DEL CONTRATO: GET /payments/appointment/:appointmentId
+  // ------------------------------------------------------------------
+  @Get('appointment/:appointmentId')
+  async getPaymentsByAppointmentId(@Param('appointmentId') appointmentId: string) {
+    try {
+      const data = await this.paymentsService.getPaymentsByAppointmentId(appointmentId);
+      return {
+        success: true,
+        message: 'Pagos obtenidos correctamente',
+        data: data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Error al obtener los pagos',
+        error: {
+          code: 'PAYMENTS_NOT_FOUND',
+          details: [error.message]
+        }
+      };
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // 5. ENDPOINT DEL CONTRATO: GET /payments/:id (Obtener pago por ID)
+
+  // ------------------------------------------------------------------
+  @Get(':id')
+  async getPaymentById(@Param('id') id: string) {
+    try {
+      const data = await this.paymentsService.getPaymentById(id);
+      return {
+        success: true,
+        message: 'Pago obtenido correctamente',
+        data: data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Error al obtener el pago',
+        error: {
+          code: 'PAYMENT_NOT_FOUND',
+          details: [error.message]
+        }
+      };
+    }
   }
 }

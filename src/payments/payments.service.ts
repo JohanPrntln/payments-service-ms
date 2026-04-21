@@ -120,4 +120,46 @@ export class PaymentsService {
       status: updatedPayment.status
     };
   }
+
+  // Esta función obtiene un pago por su ID
+  async getPaymentById(id: string) {
+    const payment = await this.paymentRepository.findOne({ where: { id } });
+    
+    if (!payment) {
+      throw new HttpException('Pago no encontrado', 404);
+    }
+
+    return {
+      id: payment.id,
+      appointmentId: payment.appointmentId,
+      userId: payment.userId,
+      amount: payment.amount,
+      currency: payment.currency,
+      method: payment.method,
+      reference: payment.reference,
+      status: payment.status,
+    };
+  }
+
+  // Esta función obtiene todos los pagos asociados a una cita (appointmentId)
+  async getPaymentsByAppointmentId(appointmentId: string) {
+    const payments = await this.paymentRepository.find({
+      where: { appointmentId }
+    });
+
+    if (!payments || payments.length === 0) {
+      throw new HttpException('No se encontraron pagos para esta cita', 404);
+    }
+
+    return payments.map(payment => ({
+      id: payment.id,
+      appointmentId: payment.appointmentId,
+      userId: payment.userId,
+      amount: payment.amount,
+      currency: payment.currency,
+      method: payment.method,
+      reference: payment.reference,
+      status: payment.status,
+    }));
+  }
 }

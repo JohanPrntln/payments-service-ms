@@ -8,7 +8,6 @@ import { Payment } from './entities/payment.entity'; // <-- Importamos la tabla 
 @Module({
   imports: [
     HttpModule,
-    // Conectamos la entidad Payment a este módulo para poder usarla en el servicio
     TypeOrmModule.forFeature([Payment]), 
   ],
   controllers: [PaymentsController],

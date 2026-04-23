@@ -8,7 +8,7 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   // ------------------------------------------------------------------
-  // 1. ENDPOINT DEL CONTRATO: POST /payments (Crear el pago)
+  // 1. ENDPOINT : POST /payments (Crear el pago)
   // ------------------------------------------------------------------
   @Post()
   async createPayment(@Body() createPaymentDto: CreatePaymentDto) {
@@ -16,14 +16,14 @@ export class PaymentsController {
       // Delegamos el trabajo pesado al servicio
       const data = await this.paymentsService.processPayment(createPaymentDto);
       
-      // Retornamos estrictamente el formato de ÉXITO del contrato
+      // Retornamos estrictamente el formato de ÉXITO 
       return {
         success: true,
         message: 'Pago procesado correctamente',
         data: data
       };
     } catch (error) {
-      // Retornamos estrictamente el formato de ERROR del contrato
+      // Retornamos estrictamente el formato de ERROR 
       return {
         success: false,
         message: 'Error al procesar el pago',
@@ -36,7 +36,7 @@ export class PaymentsController {
   }
 
   // ------------------------------------------------------------------
-  // 2. ENDPOINT DEL CONTRATO: PATCH /payments/:id/status
+  // 2. ENDPOINT : PATCH /payments/:id/status
   // ------------------------------------------------------------------
   @Patch(':id/status')
   async updatePaymentStatus(

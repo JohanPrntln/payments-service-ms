@@ -120,4 +120,17 @@ export class PaymentsService {
       status: updatedPayment.status
     };
   }
+  // Busca un pago por su referencia única y actualiza su estado automáticamente
+  async updatePaymentStatusByReference(reference: string, newStatus: string) {
+    const payment = await this.paymentRepository.findOne({ where: { reference } });
+    
+    if (payment) {
+      // Wompi manda 'APPROVED' en mayúsculas, lo pasamos a minúsculas por estética
+      payment.status = newStatus.toLowerCase(); 
+      await this.paymentRepository.save(payment);
+      this.logger.log(`¡Webhook exitoso! Pago ${reference} actualizado a ${payment.status}`);
+    } else {
+      this.logger.warn(`El webhook trajo una referencia que no existe: ${reference}`);
+    }
+  }
 }

@@ -1,3 +1,16 @@
 {
-    "js/ts.tsdk.path": "node_modules\\typescript\\lib"
+    "js/ts.tsdk.path": "node_modules\\typescript\\lib",
+    "sqltools.connections": [
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "askForPassword": true,
+            "driver": "PostgreSQL",
+            "name": "Pagos DB Local",
+            "database": "payments_db",
+            "username": "admin"
+        }
+    ]
 }

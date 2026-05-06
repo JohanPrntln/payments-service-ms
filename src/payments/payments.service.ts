@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { Payment } from './entities/payment.entity'; 
 import { firstValueFrom } from 'rxjs';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class PaymentsService {
@@ -46,19 +47,44 @@ export class PaymentsService {
 
     // 3. PREPARAR CONEXIÓN A WOMPI
     const privateKey = this.configService.get<string>('WOMPI_PRIVATE_KEY');
+    const publicKey = this.configService.get<string>('WOMPI_PUBLIC_KEY'); 
+    const integrityKey = this.configService.get<string>('WOMPI_INTEGRITY_KEY'); // <-- Declaramos la llave de integridad
     const wompiUrl = 'https://sandbox.wompi.co/v1/transactions';
+
+    // ------------------------------------------------------------------
+    // NUEVO: CREAR LA FIRMA DE INTEGRIDAD (SHA-256)
+    // ------------------------------------------------------------------
+    const rawSignature = `${referenceCode}${createPaymentDto.amount}${createPaymentDto.currency}${integrityKey}`;
+    const hashSignature = crypto.createHash('sha256').update(rawSignature).digest('hex');
+
+    // ------------------------------------------------------------------
+    // NUEVO: OBTENER EL TOKEN DE ACEPTACIÓN DINÁMICO DE WOMPI
+    // ------------------------------------------------------------------
+    let acceptanceToken = '';
+    try {
+      const merchantResponse = await firstValueFrom(
+        this.httpService.get(`https://sandbox.wompi.co/v1/merchants/${publicKey}`)
+      );
+      acceptanceToken = merchantResponse.data.data.presigned_acceptance.acceptance_token;
+      this.logger.log('Token de aceptación obtenido correctamente.');
+    } catch (error) {
+      this.logger.error('Error al obtener el token de aceptación de Wompi', error.message);
+      throw new HttpException('Fallo al obtener términos y condiciones de la pasarela', 500);
+    }
 
     // 4. MAPEO ESTRICTO PARA WOMPI
     const payload = {
       amount_in_cents: createPaymentDto.amount, 
       currency: createPaymentDto.currency,
+      signature: hashSignature, // <-- Inyectamos la firma criptográfica aquí
       customer_email: createPaymentDto.customerEmail,
       payment_method: {
         type: 'CARD',
         token: createPaymentDto.paymentMethodToken,
         installments: 1,
       },
-      reference: referenceCode, 
+      reference: referenceCode,
+      acceptance_token: acceptanceToken, // <-- Inyectamos el token de aceptación
     };
 
     try {
@@ -102,6 +128,7 @@ export class PaymentsService {
       );
     }
   }
+
   // Esta función busca un pago por su ID y le cambia el estado
   async updatePaymentStatus(id: string, newStatus: string) {
     // 1. Buscamos el pago en la base de datos
@@ -161,5 +188,19 @@ export class PaymentsService {
       reference: payment.reference,
       status: payment.status,
     }));
+  }
+
+  // Busca un pago por su referencia única y actualiza su estado automáticamente
+  async updatePaymentStatusByReference(reference: string, newStatus: string) {
+    const payment = await this.paymentRepository.findOne({ where: { reference } });
+    
+    if (payment) {
+      // Wompi manda 'APPROVED' en mayúsculas, lo pasamos a minúsculas por estética
+      payment.status = newStatus.toLowerCase(); 
+      await this.paymentRepository.save(payment);
+      this.logger.log(`¡Webhook exitoso! Pago ${reference} actualizado a ${payment.status}`);
+    } else {
+      this.logger.warn(`El webhook trajo una referencia que no existe: ${reference}`);
+    }
   }
 }

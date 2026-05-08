@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Generador de Token Wompi - Proyecto</title>
+    <style>
+        body { font-family: Arial; padding: 40px; max-width: 500px; margin: auto; }
+        .card-form { border: 1px solid #ccc; padding: 20px; border-radius: 10px; background: #f9f9f9; }
+        input { display: block; width: 90%; margin-bottom: 15px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        button { background-color: #0044ff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
+        button:hover { background-color: #0033cc; }
+        .token-box { margin-top: 20px; padding: 15px; background: #e0ffe0; border: 1px solid #00cc00; word-break: break-all; display: none; }
+    </style>
+</head>
+<body>
+
+    <h2>💳 Simular Tarjeta (Frontend)</h2>
+    <p>Conecta con Wompi para tokenizar la tarjeta de prueba.</p>
+
+    <div class="card-form">
+        <label>Número de Tarjeta:</label>
+        <input type="text" id="cardNumber" value="4242424242424242">
+
+        <label>CVC:</label>
+        <input type="text" id="cvc" value="123">
+
+        <label>Mes Expiración:</label>
+        <input type="text" id="expMonth" value="12">
+
+        <label>Año Expiración:</label>
+        <input type="text" id="expYear" value="30">
+
+        <button onclick="generarToken()">Generar Token Real</button>
+    </div>
+
+    <!-- Aquí aparecerá tu token mágicamente -->
+    <div id="tokenResult" class="token-box">
+        <strong>¡Token Generado Exitosamente!</strong><br><br>
+        Copia este texto y pégalo en el Body de Postman:<br><br>
+        <code id="tokenText" style="font-weight: bold; font-size: 1.2em; color: #0044ff;"></code>
+    </div>
+
+    <script>
+        async function generarToken() {
+            // La llave pública que te dio el profesor
+            const publicKey = "pub_test_S2J0BRnrpvqmrrheAMdKEFYsmcobgkJN";
+
+            const cardData = {
+                number: document.getElementById('cardNumber').value,
+                cvc: document.getElementById('cvc').value,
+                exp_month: document.getElementById('expMonth').value,
+                exp_year: document.getElementById('expYear').value,
+                card_holder: "Paciente Prueba"
+            };
+
+            try {
+                // Hacemos la petición directa a la API de tokenización de Wompi
+                const response = await fetch("https://sandbox.wompi.co/v1/tokens/cards", {
+                    method: "POST",
+                    headers: { "Authorization": "Bearer " + publicKey },
+                    body: JSON.stringify(cardData)
+                });
+
+                const data = await response.json();
+
+                if (data.status === "CREATED") {
+                    document.getElementById('tokenResult').style.display = "block";
+                    document.getElementById('tokenText').innerText = data.data.id;
+                } else {
+                    alert("Error de Wompi: Revise la consola.");
+                    console.log(data);
+                }
+            } catch (error) {
+                alert("Error de red: " + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

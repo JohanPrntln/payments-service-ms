@@ -13,8 +13,8 @@ RUN npm install
 # 5. Copiamos el resto de tu código (la carpeta src, tsconfig, etc.)
 COPY . .
 
-# 6. Le decimos al contenedor que va a comunicarse por el puerto 3000
-EXPOSE 3000
+# 6. Le decimos al contenedor que va a comunicarse por el puerto 4004
+EXPOSE 4004
 
 # 7. El comando final para encender el servidor cuando el contenedor arranque
 CMD ["npm", "run", "start:dev"]

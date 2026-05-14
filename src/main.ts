@@ -10,6 +10,8 @@ async function bootstrap() {
     whitelist: true, // Si el frontend envía datos extra que no están en el DTO, los ignora
     forbidNonWhitelisted: true, // Si envían datos extra, rechaza la petición por completo
   }));
+  
+  app.setGlobalPrefix('api');
 
   await app.listen(process.env.PORT ?? 3005);
 }

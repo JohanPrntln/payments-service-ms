@@ -6,11 +6,11 @@ services:
     image: postgres:15-alpine # Descarga una versión ligera de PostgreSQL
     container_name: payments-db-container
     environment:
-      POSTGRES_USER: admin     # Usuario de la base de datos
-      POSTGRES_PASSWORD: root  # Contraseña
+      POSTGRES_USER: admin # Usuario de la base de datos
+      POSTGRES_PASSWORD: root # Contraseña
       POSTGRES_DB: payments_db # Nombre de la base de datos
     ports:
-      - "5432:5432"            # Puerto estándar de Postgres
+      - '5433:5432' # Puerto estándar de Postgres
     volumes:
       - pgdata:/var/lib/postgresql/data # Guarda los datos para que no se borren al apagar Docker
 
@@ -21,7 +21,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3005:3005"
+      - '4004:4004'
     volumes:
       - .:/app
       - /app/node_modules
